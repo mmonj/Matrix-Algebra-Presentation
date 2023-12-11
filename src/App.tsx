@@ -1,35 +1,68 @@
-import { createSignal } from 'solid-js'
-import solidLogo from './assets/solid.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { createSignal } from "solid-js";
+import "./App.css";
+import { ColorMatrix } from "./components/ColorMatrix";
+import { PixelGrid } from "./components/PixelGrid";
+import { adjustBrightness, generateColorList } from "./util";
+import { ColorType } from "./util/types";
 
 function App() {
-  const [count, setCount] = createSignal(0)
+  const [getColors, setColors] = createSignal<ColorType[]>(generateColorList(100));
+  const [getSliderValue, setSliderValue] = createSignal<number>(0);
+
+  function regenerateColors() {
+    setColors(() => generateColorList(100));
+  }
+
+  function handleMatrixChange(newFilterValue: number) {
+    const newColors = getColors().map((color) => color);
+
+    for (let item of newColors) {
+      item.color = adjustBrightness(item.startingColor, newFilterValue);
+    }
+
+    setColors(() => newColors);
+  }
+
+  function handleSliderChange(event: InputEvent) {
+    const newFilterValue = parseInt((event!.target as HTMLInputElement).value);
+
+    setSliderValue(() => newFilterValue);
+    handleMatrixChange(newFilterValue);
+  }
 
   return (
-    <>
-      <div>
-        <a href="https://vitejs.dev" target="_blank">
-          <img src={viteLogo} class="logo" alt="Vite logo" />
-        </a>
-        <a href="https://solidjs.com" target="_blank">
-          <img src={solidLogo} class="logo solid" alt="Solid logo" />
-        </a>
+    <main>
+      <h1>Image Processing with Linear Algebra</h1>
+
+      <h2>Matrix Representation of a Simple Image</h2>
+
+      <button
+        onClick={regenerateColors}
+        style={{
+          "margin-right": "1rem",
+        }}
+      >
+        New Colors
+      </button>
+      <input
+        id="slider"
+        type="range"
+        min="0"
+        max="100"
+        value={getSliderValue()}
+        oninput={handleSliderChange}
+        style={{
+          "margin-right": "1rem",
+        }}
+      />
+      <span>Filter Brightness: {getSliderValue()}</span>
+
+      <div style={{ display: "flex" }}>
+        <PixelGrid colors={getColors()} setColors={setColors} />
+        <ColorMatrix colors={getColors()} />
       </div>
-      <h1>Vite + Solid</h1>
-      <div class="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count()}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p class="read-the-docs">
-        Click on the Vite and Solid logos to learn more
-      </p>
-    </>
-  )
+    </main>
+  );
 }
 
-export default App
+export default App;
